@@ -1,0 +1,19 @@
+# version: '3.8'
+
+services:
+  mysql:
+    image: mysql
+    container_name: sorcererdb-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: sorcererdb
+      MYSQL_USER: sorcerer
+      MYSQL_PASSWORD: sorcererpw
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:
