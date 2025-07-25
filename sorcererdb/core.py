@@ -1,8 +1,9 @@
 import mysql.connector
+from .config import DBConfig
 
 class SorcererDB:
-    def __init__(self, engine='sqlite', dsn=':memory:', cache_backend=None, log_queries=False):
-        self.engine = engine
+    def __init__(self, config: DBConfig, dsn=':memory:', cache_backend=None, log_queries=False):
+        self.config = config
         self.dsn = dsn
         self.log_queries = log_queries
         self.cache = cache_backend
@@ -12,31 +13,31 @@ class SorcererDB:
         self.bindings = {}
 
     def connect(self, name='default'):
-        if self.engine == 'mysql':
+        if self.config.engine == 'mysql':
             conn = mysql.connector.connect(
-                host='localhost',
-                port=3306,
-                user='sorcerer',
-                password='sorcererpw',
-                database='sorcererdb'
+                host=self.config.host,
+                port=self.config.port,
+                user=self.config.user,
+                password=self.config.password,
+                database=self.config.database
             )
             self.connections[name] = conn
             self.active_connection = name
-        elif self.engine == 'sqlite':
+        elif self.config.engine == 'sqlite':
             # conn = sqlite3.connect(self.dsn)
             # self.connections[name] = conn
             # self.active_connection = name
             pass
         else:
-            raise ValueError(f"Invalid engine: {self.engine}")
+            raise ValueError(f"Invalid engine: {self.config.engine}")
 
     def disconnect(self, name='default'):
-        if self.engine == 'mysql':
+        if self.config.engine == 'mysql':
             self.connections[name].close()
             del self.connections[name]
             if self.active_connection == name:
                 self.active_connection = None
-        elif self.engine == 'sqlite':
+        elif self.config.engine == 'sqlite':
             pass
     
     def get_connection(self, name='default'):

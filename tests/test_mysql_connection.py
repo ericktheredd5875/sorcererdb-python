@@ -1,7 +1,9 @@
 from sorcererdb.core import SorcererDB
+from sorcererdb.config import DBConfig
 
 def test_mysql_connection():
-    db = SorcererDB(engine='mysql')
+    config = DBConfig(engine='mysql')
+    db = SorcererDB(config)
     db.connect()
 
     db.set_query("CREATE TABLE IF NOT EXISTS test (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100))")
