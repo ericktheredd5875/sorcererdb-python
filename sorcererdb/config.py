@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 @dataclass
 class DBConfig:
+    name: str = "MainSorcererDB"
     engine: str = "mysql"
     host: str = "localhost"
     port: int = 3306
@@ -12,4 +13,4 @@ class DBConfig:
     database: str = "sorcererdb"
     charset: str = "utf8mb4"
     timeout: int = 30
-    
+

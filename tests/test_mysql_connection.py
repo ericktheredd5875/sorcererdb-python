@@ -4,16 +4,59 @@ from sorcererdb.config import DBConfig
 def test_mysql_connection():
     config = DBConfig(engine='mysql')
     db = SorcererDB(config)
-    db.connect()
+    db.connect(config.name)
 
     db.set_query("CREATE TABLE IF NOT EXISTS test (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100))")
     db.execute()
 
-    assert db.get_active_connection() == 'default'
+    assert db.get_active_connection() == config.name
 
-    db.disconnect()
+    db.set_query("INSERT INTO test (name) VALUES (%(name)s)")
+    db.set_bindings({"name": "Eric"})
+    print(db.execute())
+
+    db.disconnect(config.name)
 
     # db.insert("test", {"name": "Eric"})
     # result = db.set_query("SELECT * FROM test").execute()
 
     # assert len(result) >= 1
+
+def test_mysql_connection_with_dsn():
+    config = DBConfig(engine='mysql', name='TestDB')
+    db = SorcererDB(config)
+    db.connect(config.name)
+
+    db.set_query("CREATE TABLE IF NOT EXISTS test (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100))")
+    db.execute()
+
+    assert db.get_active_connection() == 'TestDB'
+    db.disconnect(config.name)
+    
+def test_mysql_connection_with_stored_queries():
+    config = DBConfig(engine='mysql', name='TestDB')
+    db = SorcererDB(config)
+    db.connect(config.name)
+
+    db.add_stored_query("test_query", "SELECT * FROM test")
+    db.set_stored_query("test_query")
+    db.execute()
+
+    assert db.get_query() == "SELECT * FROM test"
+
+    db.disconnect(config.name)
+
+def test_mysql_connection_query_reset():
+    config = DBConfig(engine='mysql', name='TestDB')
+    db = SorcererDB(config)
+    db.connect(config.name)
+
+    db.set_query("SELECT * FROM test")
+    assert db.get_query() == "SELECT * FROM test"
+
+    db.reset_query()
+    assert db.get_query() == ""
+
+    db.disconnect(config.name)
+
+# def test_mysql_connection_query_bindings():
