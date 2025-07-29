@@ -59,4 +59,24 @@ def test_mysql_connection_query_reset():
 
     db.disconnect(config.name)
 
-# def test_mysql_connection_query_bindings():
+def test_mysql_connection_query_bindings():
+    config = DBConfig(engine='mysql', name='TestDB')
+    db = SorcererDB(config)
+    db.connect(config.name)
+
+    db.set_query("SELECT * FROM test WHERE name = %(name)s")
+    db.set_binding("name", "Eric")
+    db.execute()
+
+    assert db.get_bindings() == {"name": "Eric"}
+
+    db.disconnect(config.name)
+
+def test_mysql_connection_build_bindings():
+    config = DBConfig(engine='mysql', name='TestDB')
+    db = SorcererDB(config)
+    fields, values = db.build_bindings({"name": "Eric", "age": 30, "condition": "="})
+    print(fields)
+    print(values)
+
+    assert fields == {'name': 'name = %(name)s', 'age': 'age = %(age)s', 'condition': 'condition = %(condition)s'}

@@ -13,4 +13,5 @@ class DBConfig:
     database: str = "sorcererdb"
     charset: str = "utf8mb4"
     timeout: int = 30
+    autocommit: bool = True
 

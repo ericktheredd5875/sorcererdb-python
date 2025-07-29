@@ -18,9 +18,16 @@ class SorcererDB:
         self.query          = ""
         self.bindings       = {}
         self.stored_queries = {}
-        self.query_count    = 0
+        self.row_count    = 0
 
         self.set_dsn(config)
+
+    def __del__(self):
+        self.close_cursor()
+        for conn in self.connections:
+            self.disconnect(conn)
+
+        self.connections = {}
 
     # DSN and Credentials Methods
     def set_dsn(self, config: DBConfig):
@@ -90,6 +97,10 @@ class SorcererDB:
                 database=conn_config.database,
                 charset = conn_config.charset
             )
+
+            if conn_config.autocommit:
+                conn.autocommit = True
+
             self.connections[conn_config.name] = conn
             self.active_connection = conn_config.name
         elif conn_config.engine == 'sqlite':
@@ -107,7 +118,7 @@ class SorcererDB:
         conn_config = self.get_dsn(name)
         if conn_config.engine == 'mysql':
             self.connections[conn_config.name].close()
-            del self.connections[conn_config.name]
+            # del self.connections[conn_config.name]
             if self.active_connection == conn_config.name:
                 self.active_connection = None
         elif conn_config.engine == 'sqlite':
@@ -143,8 +154,8 @@ class SorcererDB:
         if type(param) == dict or type(param) == list or type(param) == tuple:
             raise ValueError("Bindings must be a single parameter. Use set_bindings.")
 
-        param = param.strip()
-        value = value.strip()
+        param = str(param).strip()
+        value = str(value).strip()
 
         if "limit" == param or "offset" == param:
             self.bindings[param] = int(value)
@@ -167,14 +178,143 @@ class SorcererDB:
         
         return self
 
+    def build_bindings(self, data):
+        fields = {}
+        values = {}
+
+        if type(data) == dict:
+            for key, value in data.items():
+                val = value
+                condition = "="
+
+                if type(value) == list:
+                    val = value[0]
+                    condition = value[1]
+
+                binder, query, value = self.format_binding(key, val, condition)
+
+                fields[binder] = query
+                values[binder] = value
+        elif type(data) == list:
+            for item in data:
+                # [field, value, condition]
+                key       = item[0]
+                val       = item[1]
+                condition = "="
+                if len(item) > 2:
+                    condition = item[2]                    
+
+                binder, query, value = self.format_binding(key, val, condition)
+                fields[binder] = query
+                values[binder] = value
+
+        return fields, values
+
+    def format_binding(self, field, value, condition = "="):
+        if field == "":
+            return ""
+
+        condition = condition.strip().upper()
+        if condition == "LIKE" or condition == "NOT LIKE":
+            value = "%" + str(value) + "%"
+        elif condition == "IN" or condition == "NOT IN":
+            value = tuple(value)
+        elif condition == "BETWEEN":
+            value = tuple(value)
+        elif condition == "NOT BETWEEN":
+            value = tuple(value)
+        elif condition == "IS NULL" or condition == "IS NOT NULL":
+            value = None
+        elif condition == "IS" or condition == "IS NOT":
+            value = value
+        else:
+            value = value
+
+        field = field.strip().lower()
+        binder = self.format_binder(field)
+        query = f"{field} {condition} {binder}"
+
+        return field, query, value
     
+    def format_for_in(self, tag, data, delimiter = "|" ):
+        if tag == "":
+            return ""
+        
+        if type(data) == str and delimiter:
+            data = data.split(delimiter)
+
+        bindings = {}
+        for i, value in enumerate(data):
+            bindings[f"{tag}_{i}"] = value
+
+        return bindings
+
+    def format_in(self, tag, data, delimiter = "|" ):
+        bindings = self.format_for_in(tag, data, delimiter)
+        if bindings:
+            sql_string = f"{tag} IN (" 
+            for key, value in bindings.items():
+                binder = self.format_binder(key)
+                sql_string += f"{binder}, "
+                
+            
+            sql_string = sql_string[:-2]
+            sql_string += ")"
+            return sql_string, bindings
+
+        return None, None
+
+    def format_binder(self, key):
+        if self.config.engine == "mysql":
+            return "%(" + key + ")s"
+        elif self.config.engine == "sqlite":
+            return "@" + key
+        elif self.config.engine == "postgresql":
+            return "$" + key
+        else:
+            raise ValueError(f"Invalid engine: {self.config.engine}")
+
+    # Query Execution Methods
+    def set_cursor(self):
+        if self.query.strip().lower().startswith("select"):
+            self.cursor = self.connections[self.active_connection].cursor(dictionary=True, buffered=True)
+        else:
+            self.cursor = self.connections[self.active_connection].cursor(buffered=True)
+        return self
+    
+    def close_cursor(self):
+        if self.cursor:
+            self.cursor.close()
+            self.cursor = None
+        return self
+
+    def execute_proc(self, proc_name, params):
+        
+        self.close_cursor().set_cursor();
+
+        try:
+            result = self.cursor.callproc(proc_name, params)
+        except mysql.connector.Error as err:
+            print("Something went wrong: {}".format(err))
+            self.sql_error = err
+            return False
+
+        return result
+
+    def simple_query(self, query, fetch_type = "all", size = None):
+        self.close_cursor().set_cursor();
+        self.set_query(query)
+
+        try:
+            return self.get_result_set(fetch_type, size)
+        except mysql.connector.Error as err:
+            print("Something went wrong: {}".format(err))
+            self.sql_error = err
+            return False
 
     def execute(self):
 
-        if self.query.strip().lower().startswith("select"):
-            self.cursor = self.connections[self.active_connection].cursor(dictionary=True)
-        else:
-            self.cursor = self.connections[self.active_connection].cursor()
+        self.close_cursor().set_cursor();
 
         try:
             self.cursor.execute(self.query, self.bindings or {})
@@ -185,39 +325,101 @@ class SorcererDB:
 
         return True
 
-        # if self.query.strip().lower().startswith("insert") or self.query.strip().lower().startswith("update"):
-        #     self.connections[self.active_connection].commit()
-        #     return cursor.rowcount
-        # else:
-        #     return cursor.fetchall()
-        # else:
-        #     self.connections[self.active_connection].commit()
-        #     return cursor.rowcount
+    def get_result_count(self):
+        return self.row_count
 
     def get_result_set(self, fetch_type = "all", size = None):
 
-        self.cursor.close()
         if self.execute():
             if fetch_type == "all":
-                self.query_count = self.cursor.rowcount
+                self.row_count = self.cursor.rowcount
                 return self.cursor.fetchall()
             elif fetch_type == "one":
-                self.query_count = self.cursor.rowcount
+                self.row_count = self.cursor.rowcount
                 return self.cursor.fetchone()
             elif fetch_type == "many":
-                self.query_count = self.cursor.rowcount
+                self.row_count = self.cursor.rowcount
                 return self.cursor.fetchmany(size=size)
             elif fetch_type == "count":
-                self.query_count = self.cursor.rowcount
-                return self.query_count
+                self.row_count = self.cursor.rowcount
+                return self.row_count
             elif fetch_type == "last_insert_id":
                 return self.cursor.lastrowid
             else:
                 raise ValueError(f"Invalid fetch type: {fetch_type}")
         else:
             return False
+    
+    def get_result_data(self, fetch_type = "all", size = None):
+        if fetch_type == "all":
+            return self.cursor.fetchall()
+        elif fetch_type == "one":
+            return self.cursor.fetchone()
+        elif fetch_type == "many":
+            return self.cursor.fetchmany(size=size)
 
 
+    # CRUD Methods
+    def insert_record(self, table, data):
+        data_count = int(len(data))
+        if data_count > 1:
+            fields, values = self.build_bindings(data)
+
+            insert_sql = "INSERT INTO `" + table + "` "
+            insert_sql += "SET " + ", ".join(fields.values())
+            self.set_query(insert_sql).set_bindings(values).execute()
+            return self.get_result_set("last_insert_id")
+        else:
+            raise ValueError(f"Invalid data: {data}")
+
+    def udpate_record(self, table, data, conditions):
+        fields, values = self.build_bindings(data)
+
+        condition_count = int(len(conditions))
+        if condition_count > 0:
+            c_fields, c_values = self.build_bindings(conditions)
+        else:
+            c_fields = {}
+            c_values = {}
+
+        update_sql = "UPDATE `" + table + "` "
+        update_sql += "SET " + ", ".join(fields.values())
+
+        if condition_count > 0:
+            update_sql += " WHERE " + ", ".join(c_fields.values())
+
+        self.set_query(update_sql).set_bindings(values).set_bindings(c_values).execute()
+        return self.get_result_set("count")
+
+    def delete_record(self, table, conditions, limit = None):
+        condition_count = int(len(conditions))
+        if condition_count > 0:
+            if limit:
+                limit = " LIMIT " + str(limit)
+            else:
+                limit = ""
+
+            c_fields, c_values = self.build_bindings(conditions)
+
+            delete_sql = "DELETE FROM `" + table + "` "
+            delete_sql += " WHERE " + ", ".join(c_fields.values())
+            delete_sql += limit
+
+            self.set_query(delete_sql).set_bindings(c_values).execute()
+            return self.get_result_set("count")
+        else:
+            raise ValueError(f"Invalid conditions: {conditions}")
 
 
-    # def get_last_error(self):
+    # Transactional Methods
+    def begin_transaction(self):
+        self.connections[self.active_connection].start_transaction()
+        return self
+    
+    def commit_transaction(self):
+        self.connections[self.active_connection].commit()
+        return self
+    
+    def rollback_transaction(self):
+        self.connections[self.active_connection].rollback()
+        return self
