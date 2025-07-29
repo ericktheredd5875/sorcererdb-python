@@ -3,6 +3,7 @@
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 ![Python](https://img.shields.io/badge/python-3.8%2B-blue)
 ![Status: In Development](https://img.shields.io/badge/status-alpha-orange)
+[![codecov](https://codecov.io/gh/ericktheredd5875/sorcererdb-python/graph/badge.svg?token=579MCVZ7P3)](https://codecov.io/gh/ericktheredd5875/sorcererdb-python)
 
 **SorcererDB** is a lightweight, extensible database abstraction layer designed to simplify raw SQL access while offering advanced features like multi-connection management, query caching, and reusable query definitions.
 
