@@ -56,4 +56,4 @@ jobs:
             token: ${{ secrets.CODECOV_TOKEN }}
             slug: ericktheredd5875/sorcererdb-python
             flags: unittests
-            verbose: true
+            # verbose: true
