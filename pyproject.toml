@@ -11,7 +11,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "black", "mypy"]
+dev = ["pytest", "pytest-cov", "black", "mypy"]
 
 [build-system]
 requires = ["setuptools", "wheel"]
