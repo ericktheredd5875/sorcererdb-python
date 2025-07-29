@@ -43,7 +43,7 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          pytest --cov=sorcererdb --cov-branch --cov-report=xml tests/
+          pytest --cov=sorcererdb --cov-report=xml:coverage.xml --cov-report=term --cov-config=pytest.ini
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
