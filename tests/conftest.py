@@ -21,7 +21,7 @@ def test_config():
 @pytest.fixture(scope="function")
 def db(test_config):
 
-    # create_test_db()
+    create_test_db()
 
     """Database fixture with cleanup"""
     db = SorcererDB(test_config)
