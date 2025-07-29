@@ -23,11 +23,14 @@ class SorcererDB:
         self.set_dsn(config)
 
     def __del__(self):
-        self.close_cursor()
-        for conn in self.connections:
+        # self.close_cursor()
+        temp_connections = self.connections.copy()
+        for conn in temp_connections:
+            # self.connections[conn.name].close()
             self.disconnect(conn)
 
         self.connections = {}
+        temp_connections = {}
 
     # DSN and Credentials Methods
     def set_dsn(self, config: DBConfig):
@@ -89,20 +92,24 @@ class SorcererDB:
     def connect(self, name):
         conn_config = self.get_dsn(name) 
         if conn_config.engine == 'mysql':
-            conn = mysql.connector.connect(
-                host=conn_config.host,
-                port=conn_config.port,
-                user=conn_config.user,
-                password=conn_config.password,
-                database=conn_config.database,
-                charset = conn_config.charset
-            )
+            try:
+                conn = mysql.connector.connect(
+                    host=conn_config.host,
+                    port=conn_config.port,
+                    user=conn_config.user,
+                    password=conn_config.password,
+                    database=conn_config.database,
+                    charset = conn_config.charset
+                )
 
-            if conn_config.autocommit:
-                conn.autocommit = True
+                if conn_config.autocommit:
+                    conn.autocommit = True
 
-            self.connections[conn_config.name] = conn
-            self.active_connection = conn_config.name
+                self.connections[conn_config.name] = conn
+                self.active_connection = conn_config.name
+            except mysql.connector.Error as err:
+                raise ConnectionError(f"Failed to connect to {name}: {err}")
+
         elif conn_config.engine == 'sqlite':
             # conn = sqlite3.connect(self.dsn)
             # self.connections[name] = conn
@@ -113,12 +120,13 @@ class SorcererDB:
 
         return self
 
+
     # Disconnect Methods
     def disconnect(self, name):
         conn_config = self.get_dsn(name)
         if conn_config.engine == 'mysql':
             self.connections[conn_config.name].close()
-            # del self.connections[conn_config.name]
+            del self.connections[conn_config.name]
             if self.active_connection == conn_config.name:
                 self.active_connection = None
         elif conn_config.engine == 'sqlite':
@@ -284,6 +292,7 @@ class SorcererDB:
     
     def close_cursor(self):
         if self.cursor:
+            # self.cursor.fetchall()
             self.cursor.close()
             self.cursor = None
         return self
