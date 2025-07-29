@@ -147,6 +147,7 @@ class SorcererDB:
             raise ValueError(f"Stored query {key} does not exist")
 
     def set_query(self, sql):
+        self.reset_bindings()
         self.query = sql
         return self
 
@@ -369,19 +370,19 @@ class SorcererDB:
 
 
     # CRUD Methods
-    def insert_record(self, table, data):
+    def insert(self, table, data):
         data_count = int(len(data))
         if data_count > 0:
             fields, values = self.build_bindings(data)
 
             insert_sql = "INSERT INTO `" + table + "` "
             insert_sql += "SET " + ", ".join(fields.values())
-            self.set_query(insert_sql).set_bindings(values).execute()
+            self.set_query(insert_sql).set_bindings(values)
             return self.get_result_set("last_insert_id")
         else:
             raise ValueError(f"Invalid data: {data}")
 
-    def update_record(self, table, data, conditions):
+    def update(self, table, data, conditions):
         fields, values = self.build_bindings(data)
 
         condition_count = int(len(conditions))
@@ -397,10 +398,10 @@ class SorcererDB:
         if condition_count > 0:
             update_sql += " WHERE " + ", ".join(c_fields.values())
 
-        self.set_query(update_sql).set_bindings(values).set_bindings(c_values).execute()
+        self.set_query(update_sql).set_bindings(values).set_bindings(c_values)
         return self.get_result_set("count")
 
-    def delete_record(self, table, conditions, limit = None):
+    def delete(self, table, conditions, limit = None):
         condition_count = int(len(conditions))
         if condition_count > 0:
             if limit:
@@ -414,21 +415,21 @@ class SorcererDB:
             delete_sql += " WHERE " + ", ".join(c_fields.values())
             delete_sql += limit
 
-            self.set_query(delete_sql).set_bindings(c_values).execute()
+            self.set_query(delete_sql).set_bindings(c_values)
             return self.get_result_set("count")
         else:
             raise ValueError(f"Invalid conditions: {conditions}")
 
 
     # Transactional Methods
-    def begin_transaction(self):
+    def begin(self):
         self.connections[self.active_connection].start_transaction()
         return self
     
-    def commit_transaction(self):
+    def commit(self):
         self.connections[self.active_connection].commit()
         return self
     
-    def rollback_transaction(self):
+    def rollback(self):
         self.connections[self.active_connection].rollback()
         return self
