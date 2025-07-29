@@ -43,7 +43,12 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          pytest --cov=sorcererdb --cov-report=xml:coverage.xml --cov-report=term --cov-config=pytest.ini
+          coverage run -m pytest
+          coverage report
+          coverage xml
+
+      - name: (Debug) Show coverage summary
+        run: coverage report
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
@@ -51,3 +56,4 @@ jobs:
             token: ${{ secrets.CODECOV_TOKEN }}
             slug: ericktheredd5875/sorcererdb-python
             flags: unittests
+            verbose: true
