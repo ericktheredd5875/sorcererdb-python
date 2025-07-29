@@ -17,27 +17,52 @@
 - Query profiling and memory diagnostics
 - Full transaction support
 
+## ⚡️ Quick Start
+
+```bash
+pip install sorcererdb
+```
+
+```python
+from sorcererdb import SorcererDB, DBConfig
+
+config = DBConfig(user="root", password="pw", database="test")
+db = SorcererDB().connect("default", config)
+
+rows = db.execute("SELECT * FROM users WHERE role = %s", ("admin",))
+```
+
+---
+
 ## 📦 Installation
 
 ```bash
 pip install sorcererdb
 ```
 
-## 🧪 Example Usage
+Or install directly from source:
 
-```python
-from sorcererdb.core import SorcererDB
-
-db = SorcererDB(engine='sqlite', dsn=':memory:')
-db.connect()
-
-db.set_query("CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT)")
-db.execute()
-
-db.insert("test", {"name": "Alice"})
-result = db.set_query("SELECT * FROM test").execute()
-print(result)
+```bash
+git clone https://github.com/ericktheredd5875/sorcererdb-python.git
+cd sorcererdb-python
+pip install -e .
 ```
+
+---
+
+## 🧭 Roadmap / TODO
+
+- [x] Basic DB connection pool
+- [x] Simple query execution interface
+- [ ] Caching layer (Memcache/Redis backends)
+- [ ] Query profiler with timing and trace support
+- [ ] Named prepared queries (alias/shortcut system)
+- [ ] SQLite and PostgreSQL drivers
+- [ ] Type hinting and full doc coverage
+- [ ] `sorcerer` CLI for testing and diagnostics
+- [ ] PyPI release
+
+---
 
 ## 📜 License
 
