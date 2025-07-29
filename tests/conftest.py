@@ -41,22 +41,24 @@ def setup_test_tables(db):
     """Create test tables"""
     tables = [
         """
-        CREATE TABLE IF NOT EXISTS users (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            name VARCHAR(100) NOT NULL,
-            email VARCHAR(100) UNIQUE NOT NULL,
-            age INT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        CREATE TABLE IF NOT EXISTS `users` (
+            `id` INT NOT NULL AUTO_INCREMENT,
+            `name` VARCHAR(100) NOT NULL DEFAULT '',
+            `email` VARCHAR(100) NOT NULL DEFAULT '',
+            `age` INT NOT NULL DEFAULT '0',
+            `created_at` TIMESTAMP NOT NULL DEFAULT (now()),
+            PRIMARY KEY (`id`) USING BTREE,
+            INDEX `email` (`email`) USING BTREE
         )
         """,
         """
-        CREATE TABLE IF NOT EXISTS posts (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            user_id INT,
-            title VARCHAR(200) NOT NULL,
-            content TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id)
+        CREATE TABLE IF NOT EXISTS `posts` (
+            `id` INT NOT NULL AUTO_INCREMENT,
+            `user_id` INT NOT NULL DEFAULT '0',
+            `title` VARCHAR(200) NOT NULL DEFAULT '',
+            `content` TEXT NOT NULL,
+            `created_at` TIMESTAMP NOT NULL DEFAULT (now()),
+            INDEX `user_id` (`user_id`) USING BTREE
         )
         """
     ]

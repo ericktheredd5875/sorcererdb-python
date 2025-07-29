@@ -371,7 +371,7 @@ class SorcererDB:
     # CRUD Methods
     def insert_record(self, table, data):
         data_count = int(len(data))
-        if data_count > 1:
+        if data_count > 0:
             fields, values = self.build_bindings(data)
 
             insert_sql = "INSERT INTO `" + table + "` "
@@ -381,7 +381,7 @@ class SorcererDB:
         else:
             raise ValueError(f"Invalid data: {data}")
 
-    def udpate_record(self, table, data, conditions):
+    def update_record(self, table, data, conditions):
         fields, values = self.build_bindings(data)
 
         condition_count = int(len(conditions))
