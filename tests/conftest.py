@@ -1,7 +1,6 @@
 # tests/conftest.py
 import pytest
-from sorcererdb.core import SorcererDB
-from sorcererdb.config import DBConfig
+from sorcererdb import SorcererDB, DBConfig, Spell
 
 @pytest.fixture(scope="session")
 def test_config():
@@ -64,14 +63,14 @@ def setup_test_tables(db):
     ]
     
     for table_sql in tables:
-        db.set_query(table_sql)
+        db.query(table_sql)
         db.execute()
 
 def cleanup_test_tables(db):
     """Clean test tables"""
     tables = ['posts', 'users']  # Order matters due to foreign keys
     for table in tables:
-        db.set_query(f"TRUNCATE TABLE {table}")
+        db.query(f"TRUNCATE TABLE {table}")
         db.execute()
 
 def create_test_db():
@@ -80,14 +79,14 @@ def create_test_db():
     db = SorcererDB(config)
     db.connect(config.name)
 
-    db.set_query("CREATE DATABASE IF NOT EXISTS sorcererdb_test1;")
+    db.query("CREATE DATABASE IF NOT EXISTS sorcererdb_test1;")
     db.execute()
-    db.set_query("CREATE DATABASE IF NOT EXISTS sorcererdb_test2;")
+    db.query("CREATE DATABASE IF NOT EXISTS sorcererdb_test2;")
     db.execute()
 
-    db.set_query("GRANT ALL PRIVILEGES ON sorcererdb_test1.* TO 'sorcerer'@'%'")
+    db.query("GRANT ALL PRIVILEGES ON sorcererdb_test1.* TO 'sorcerer'@'%'")
     db.execute()
-    db.set_query("GRANT ALL PRIVILEGES ON sorcererdb_test2.* TO 'sorcerer'@'%'")
+    db.query("GRANT ALL PRIVILEGES ON sorcererdb_test2.* TO 'sorcerer'@'%'")
     db.execute()
 
     db.disconnect(config.name)

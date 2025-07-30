@@ -1,6 +1,5 @@
-from sorcererdb.core import SorcererDB
-from sorcererdb.config import DBConfig
 import pytest
+from sorcererdb import SorcererDB, DBConfig, Spell
 
 def test_connection_management(db):
     """Test connection management using fixture"""

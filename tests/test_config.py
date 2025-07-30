@@ -1,6 +1,6 @@
 # tests/test_config.py
 import pytest
-from sorcererdb.config import DBConfig
+from sorcererdb import SorcererDB, DBConfig, Spell
 
 def test_default_config():
     """Test DBConfig with default values"""

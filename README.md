@@ -61,6 +61,9 @@ pip install -e .
 - [ ] Type hinting and full doc coverage
 - [ ] `sorcerer` CLI for testing and diagnostics
 - [ ] PyPI release
+- [ ] Connection Pooling (with thread-local binding)
+- [ ] Multi-Threading Support
+- [ ]
 
 ---
 

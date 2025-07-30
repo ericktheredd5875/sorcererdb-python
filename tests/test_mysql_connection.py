@@ -1,24 +1,24 @@
-from sorcererdb.core import SorcererDB
-from sorcererdb.config import DBConfig
+import pytest
+from sorcererdb import SorcererDB, DBConfig, Spell
 
 def test_mysql_connection():
     config = DBConfig(engine='mysql')
     db = SorcererDB(config)
     db.connect(config.name)
 
-    db.set_query("CREATE TABLE IF NOT EXISTS test (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100))")
+    db.query("CREATE TABLE IF NOT EXISTS test (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100))")
     db.execute()
 
     assert db.get_active_connection() == config.name
 
-    db.set_query("INSERT INTO test (name) VALUES (%(name)s)")
+    db.query("INSERT INTO test (name) VALUES (%(name)s)")
     db.set_bindings({"name": "Eric"})
-    print(db.execute())
+    db.execute()
 
     db.disconnect(config.name)
 
     # db.insert("test", {"name": "Eric"})
-    # result = db.set_query("SELECT * FROM test").execute()
+    # result = db.query("SELECT * FROM test").execute()
 
     # assert len(result) >= 1
 
@@ -27,7 +27,7 @@ def test_mysql_connection_with_dsn():
     db = SorcererDB(config)
     db.connect(config.name)
 
-    db.set_query("CREATE TABLE IF NOT EXISTS test (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100))")
+    db.query("CREATE TABLE IF NOT EXISTS test (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100))")
     db.execute()
 
     assert db.get_active_connection() == 'TestDB'
@@ -51,7 +51,7 @@ def test_mysql_connection_query_reset():
     db = SorcererDB(config)
     db.connect(config.name)
 
-    db.set_query("SELECT * FROM test")
+    db.query("SELECT * FROM test")
     assert db.get_query() == "SELECT * FROM test"
 
     db.reset_query()
@@ -64,9 +64,7 @@ def test_mysql_connection_query_bindings():
     db = SorcererDB(config)
     db.connect(config.name)
 
-    db.set_query("SELECT * FROM test WHERE name = %(name)s")
-    db.set_binding("name", "Eric")
-    db.execute()
+    db.query("SELECT * FROM test WHERE name = %(name)s").set_bindings({"name": "Eric"})
 
     assert db.get_bindings() == {"name": "Eric"}
 
@@ -75,8 +73,10 @@ def test_mysql_connection_query_bindings():
 def test_mysql_connection_build_bindings():
     config = DBConfig(engine='mysql', name='TestDB')
     db = SorcererDB(config)
+    db.connect(config.name)
+
     fields, values = db.build_bindings({"name": "Eric", "age": 30, "condition": "="})
-    print(fields)
-    print(values)
 
     assert fields == {'name': 'name = %(name)s', 'age': 'age = %(age)s', 'condition': 'condition = %(condition)s'}
+
+    db.disconnect(config.name)

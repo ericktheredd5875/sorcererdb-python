@@ -2,6 +2,8 @@ import mysql.connector
 from mysql.connector import Error
 
 from .config import DBConfig
+from .spell import Spell
+
 
 class SorcererDB:
     def __init__(self, config: DBConfig, cache_backend=None, log_queries=False):
@@ -15,10 +17,10 @@ class SorcererDB:
         self.cache       = cache_backend
         self.sql_error   = None
 
-        self.query          = ""
+        self.sql_query      = ""
         self.bindings       = {}
         self.stored_queries = {}
-        self.row_count    = 0
+        self.row_count      = 0
 
         self.set_dsn(config)
 
@@ -141,25 +143,25 @@ class SorcererDB:
     
     def set_stored_query(self, key):
         if key in self.stored_queries:
-            self.set_query(self.stored_queries[key])
+            self.query(self.stored_queries[key])
             return self
         else:
             raise ValueError(f"Stored query {key} does not exist")
 
-    def set_query(self, sql):
+    def query(self, sql):
         self.reset_bindings()
-        self.query = sql
+        self.sql_query = sql
         return self
 
     def reset_query(self):
-        self.query = ""
+        self.sql_query = ""
         return self
 
     def get_query(self):
-        return self.query
+        return self.sql_query
 
     # Bindings Methods
-    def set_binding(self, param, value):
+    def binding(self, param, value):
         if type(param) == dict or type(param) == list or type(param) == tuple:
             raise ValueError("Bindings must be a single parameter. Use set_bindings.")
 
@@ -183,7 +185,7 @@ class SorcererDB:
 
     def set_bindings(self, params):
         for param, value in params.items():
-            self.set_binding(param, value)
+            self.binding(param, value)
         
         return self
 
@@ -284,26 +286,26 @@ class SorcererDB:
             raise ValueError(f"Invalid engine: {self.config.engine}")
 
     # Query Execution Methods
-    def set_cursor(self):
-        if self.query.strip().lower().startswith("select"):
-            self.cursor = self.connections[self.active_connection].cursor(dictionary=True, buffered=True)
-        else:
-            self.cursor = self.connections[self.active_connection].cursor(buffered=True)
-        return self
+    # def set_cursor(self):
+    #     if self.query.strip().lower().startswith("select"):
+    #         self.cursor = self.connections[self.active_connection].cursor(dictionary=True, buffered=True)
+    #     else:
+    #         self.cursor = self.connections[self.active_connection].cursor(buffered=True)
+    #     return self
     
-    def close_cursor(self):
-        if self.cursor:
-            # self.cursor.fetchall()
-            self.cursor.close()
-            self.cursor = None
-        return self
+    # def close_cursor(self):
+    #     if self.cursor:
+    #         # self.cursor.fetchall()
+    #         self.cursor.close()
+    #         self.cursor = None
+    #     return self
 
-    def execute_proc(self, proc_name, params):
+    # Execute a Stored Procedure
+    def proc(self, name, params = ()):
         
-        self.close_cursor().set_cursor();
-
         try:
-            result = self.cursor.callproc(proc_name, params)
+            spell = Spell(self.connections[self.active_connection])
+            result = spell.proc(name, params)
         except mysql.connector.Error as err:
             print("Something went wrong: {}".format(err))
             self.sql_error = err
@@ -311,12 +313,13 @@ class SorcererDB:
 
         return result
 
-    def simple_query(self, query, fetch_type = "all", size = None):
-        self.close_cursor().set_cursor();
-        self.set_query(query)
 
+    def simple(self, query, fetch_type = "all", size = None):
         try:
-            return self.get_result_set(fetch_type, size)
+            self.query(query)
+            spell = Spell(self.connections[self.active_connection])
+            spell.execute(self.sql_query)
+            return spell.fetch(fetch_type, size)
         except mysql.connector.Error as err:
             print("Something went wrong: {}".format(err))
             self.sql_error = err
@@ -324,43 +327,46 @@ class SorcererDB:
 
     def execute(self):
 
-        self.close_cursor().set_cursor();
 
-        try:
-            self.cursor.execute(self.query, self.bindings or {})
-        except mysql.connector.Error as err:
-            print("Something went wrong: {}".format(err))
-            self.sql_error = err
-            return False
+        spell = Spell(self.connections[self.active_connection])
+        spell.execute(self.sql_query, self.bindings or {})
+        return spell
 
-        return True
+        # self.close_cursor().set_cursor();
 
-    def get_result_count(self):
-        return self.row_count
+        # try:
+        #     self.cursor.execute(self.query, self.bindings or {})
+        # except mysql.connector.Error as err:
+        #     print("Something went wrong: {}".format(err))
+        #     self.sql_error = err
+        #     return False
 
-    def get_result_set(self, fetch_type = "all", size = None):
+        # return True
 
-        if self.execute():
+    def result_set(self, fetch_type = "all", size = None):
+
+        spell = self.execute()
+        if spell:
             if fetch_type == "all":
-                self.row_count = self.cursor.rowcount
-                return self.cursor.fetchall()
+                self.row_count = spell.rowcount()
+                return spell.fetchall()
             elif fetch_type == "one":
-                self.row_count = self.cursor.rowcount
-                return self.cursor.fetchone()
+                self.row_count = spell.rowcount()
+                return spell.fetchone()
             elif fetch_type == "many":
-                self.row_count = self.cursor.rowcount
-                return self.cursor.fetchmany(size=size)
+                self.row_count = spell.rowcount()
+                return spell.fetchmany(size=size)
             elif fetch_type == "count":
-                self.row_count = self.cursor.rowcount
+                self.row_count = spell.rowcount()
                 return self.row_count
             elif fetch_type == "last_insert_id":
-                return self.cursor.lastrowid
+                return spell.insert_id()
             else:
                 raise ValueError(f"Invalid fetch type: {fetch_type}")
         else:
             return False
     
-    def get_result_data(self, fetch_type = "all", size = None):
+    def result_data(self, fetch_type = "all", size = None):
         if fetch_type == "all":
             return self.cursor.fetchall()
         elif fetch_type == "one":
@@ -368,6 +374,8 @@ class SorcererDB:
         elif fetch_type == "many":
             return self.cursor.fetchmany(size=size)
 
+    def result_count(self):
+        return self.row_count
 
     # CRUD Methods
     def insert(self, table, data):
@@ -377,8 +385,8 @@ class SorcererDB:
 
             insert_sql = "INSERT INTO `" + table + "` "
             insert_sql += "SET " + ", ".join(fields.values())
-            self.set_query(insert_sql).set_bindings(values)
-            return self.get_result_set("last_insert_id")
+            self.query(insert_sql).set_bindings(values)
+            return self.result_set("last_insert_id")
         else:
             raise ValueError(f"Invalid data: {data}")
 
@@ -398,8 +406,8 @@ class SorcererDB:
         if condition_count > 0:
             update_sql += " WHERE " + ", ".join(c_fields.values())
 
-        self.set_query(update_sql).set_bindings(values).set_bindings(c_values)
-        return self.get_result_set("count")
+        self.query(update_sql).set_bindings(values).set_bindings(c_values)
+        return self.result_set("count")
 
     def delete(self, table, conditions, limit = None):
         condition_count = int(len(conditions))
@@ -415,8 +423,8 @@ class SorcererDB:
             delete_sql += " WHERE " + ", ".join(c_fields.values())
             delete_sql += limit
 
-            self.set_query(delete_sql).set_bindings(c_values)
-            return self.get_result_set("count")
+            self.query(delete_sql).set_bindings(c_values)
+            return self.result_set("count")
         else:
             raise ValueError(f"Invalid conditions: {conditions}")
 
