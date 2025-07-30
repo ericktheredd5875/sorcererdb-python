@@ -57,21 +57,20 @@ def setup_test_tables(db):
             `title` VARCHAR(200) NOT NULL DEFAULT '',
             `content` TEXT NOT NULL,
             `created_at` TIMESTAMP NOT NULL DEFAULT (now()),
+            PRIMARY KEY (`id`) USING BTREE,
             INDEX `user_id` (`user_id`) USING BTREE
         )
         """
     ]
     
     for table_sql in tables:
-        db.query(table_sql)
-        db.execute()
+        db.simple(table_sql, "count")
 
 def cleanup_test_tables(db):
     """Clean test tables"""
     tables = ['posts', 'users']  # Order matters due to foreign keys
     for table in tables:
-        db.query(f"TRUNCATE TABLE {table}")
-        db.execute()
+        db.simple(f"TRUNCATE TABLE {table};", "count")
 
 def create_test_db():
     """Create test database"""
@@ -79,15 +78,11 @@ def create_test_db():
     db = SorcererDB(config)
     db.connect(config.name)
 
-    db.query("CREATE DATABASE IF NOT EXISTS sorcererdb_test1;")
-    db.execute()
-    db.query("CREATE DATABASE IF NOT EXISTS sorcererdb_test2;")
-    db.execute()
+    db.simple("CREATE DATABASE IF NOT EXISTS sorcererdb_test1;", "count")
+    db.simple("CREATE DATABASE IF NOT EXISTS sorcererdb_test2;", "count")
 
-    db.query("GRANT ALL PRIVILEGES ON sorcererdb_test1.* TO 'sorcerer'@'%'")
-    db.execute()
-    db.query("GRANT ALL PRIVILEGES ON sorcererdb_test2.* TO 'sorcerer'@'%'")
-    db.execute()
+    db.simple("GRANT ALL PRIVILEGES ON sorcererdb_test1.* TO 'sorcerer'@'%'", "count")
+    db.simple("GRANT ALL PRIVILEGES ON sorcererdb_test2.* TO 'sorcerer'@'%'", "count")
 
     db.disconnect(config.name)
 
