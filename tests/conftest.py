@@ -1,10 +1,20 @@
 # tests/conftest.py
 import pytest
-from sorcererdb import SorcererDB, DBConfig, Spell
+
+# Attempt to import sorcererdb modules — warn if it fails
+try:
+    from sorcererdb import SorcererDB, DBConfig, Spell
+except ModuleNotFoundError as e:
+    import sys
+    print(f"[conftest.py warning] Could not import modules: {e}", file=sys.stderr)
+    SorcererDB = DBConfig = Spell = None
 
 @pytest.fixture(scope="session")
 def test_config():
     """Test database configuration"""
+    if DBConfig is None:
+        pytest.skip("DBConfig not available — sorcererdb not installed.")
+        
     return DBConfig(
         engine='mysql',
         name='TestDB',

@@ -3,11 +3,12 @@ name = "sorcererdb"
 version = "0.1.0"
 description = "A lightweight, caching, multi-connection SQL abstraction for Python"
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
 authors = [{name = "Eric Harris"}]
 requires-python = ">=3.8"
 dependencies = [
-    "mysql-connector-python"
+    "mysql-connector-python",
+    "loguru"
 ]
 
 [project.optional-dependencies]

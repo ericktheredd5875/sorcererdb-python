@@ -1,5 +1,7 @@
 # sorcererdb/spell.py
-from re import S
+# from re import S
+from loguru import logger
+
 import mysql.connector
 from mysql.connector import Error
 
@@ -23,17 +25,20 @@ class Spell:
             self.cursor = self.open_cursor("select")
             return self.cursor.callproc(name, params)
         except mysql.connector.Error as err:
+            logger.error(f"[Spell] Error executing procedure: {name} | {err}")
             raise ValueError(f"Something went wrong: {err}")
 
     def execute(self, query, bindings = None):
         
         self.query = query
         self.bindings = bindings
+        logger.debug(f"[Spell] Executing query: {self.query} | bindings: {self.bindings}")
         
         try:
             self.cursor = self.open_cursor(query)
             self.cursor.execute(query, bindings)
         except mysql.connector.Error as err:
+            logger.error(f"[Spell] Error executing query: {self.query} | {err}")
             raise ValueError(f"Something went wrong: {err}")
 
         return self.cursor
@@ -51,9 +56,11 @@ class Spell:
             case "insert_id":
                 return self.insert_id()
             case _:
+                logger.error(f"[Spell] Invalid fetch type: {fetch_type}")
                 raise ValueError(f"Invalid fetch type: {fetch_type}")
 
     def rowcount(self):
+        logger.debug(f"[Spell] Rowcount: {self.cursor.rowcount}")
         return self.cursor.rowcount
 
     def fetchall(self):
@@ -71,6 +78,7 @@ class Spell:
     def close(self):
         self.cursor.close()
         self.cursor = None
+        logger.debug(f"[Spell] Cursor closed")
 
     def __enter__(self):
         return self

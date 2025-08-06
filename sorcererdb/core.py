@@ -1,5 +1,6 @@
 import mysql.connector
 from mysql.connector import Error
+from loguru import logger
 
 from .config import DBConfig
 from .spell import Spell
@@ -25,6 +26,7 @@ class SorcererDB:
         self.set_dsn(config)
 
     def __del__(self):
+        logger.debug(f"[SorcererDB] Destroying SorcererDB instance")
         # self.close_cursor()
         temp_connections = self.connections.copy()
         for conn in temp_connections:
@@ -40,7 +42,9 @@ class SorcererDB:
             if config.name == "":
                 config.name = "PDODB-" + str(len(self.dsn) + 1)
             self.dsn[config.name] = config
+            logger.debug(f"[SorcererDB] DSN {config.name} set")
         else:
+            logger.error(f"[SorcererDB] DSN {config.name} already exists")
             raise ValueError(f"DSN {config.name} already exists")
         
         return self
@@ -49,6 +53,7 @@ class SorcererDB:
         if name in self.dsn:
             return self.dsn[name]
         else:
+            logger.error(f"[SorcererDB] DSN {name} does not exist")
             raise ValueError(f"DSN {name} does not exist")
 
     def check_dsn(self, name):
@@ -60,8 +65,10 @@ class SorcererDB:
     # Connection Methods
     def get_connection(self, name):
         if name in self.connections:
+
             return self.connections[name]
         else:
+            logger.error(f"[SorcererDB] Connection {name} does not exist")
             raise ValueError(f"Connection {name} does not exist")
 
     def get_active_connection(self):
@@ -72,6 +79,7 @@ class SorcererDB:
     
     # Change the active db connection based on name
     def set_active_connection(self, name):
+        logger.info(f"[SorcererDB] Setting active connection to {name}")
         # Check if the connection already exists
         if name in self.connections:
             self.active_connection = name
@@ -80,6 +88,7 @@ class SorcererDB:
             # Open a new connection if not already open
             self.connect(name)
         else:
+            logger.error(f"[SorcererDB] DSN {name} does not exist")
             raise ValueError(f"DSN {name} does not exist")
         
         return self
@@ -109,6 +118,7 @@ class SorcererDB:
 
                 self.connections[conn_config.name] = conn
                 self.active_connection = conn_config.name
+                logger.info(f"[SorcererDB] Connected to {name} / {conn_config.host}")
             except mysql.connector.Error as err:
                 raise ConnectionError(f"Failed to connect to {name}: {err}")
 
@@ -118,6 +128,7 @@ class SorcererDB:
             # self.active_connection = name
             pass
         else:
+            logger.error(f"[SorcererDB] Invalid engine: {conn_config.engine}")
             raise ValueError(f"Invalid engine: {conn_config.engine}")
 
         return self
@@ -131,6 +142,7 @@ class SorcererDB:
             del self.connections[conn_config.name]
             if self.active_connection == conn_config.name:
                 self.active_connection = None
+            logger.debug(f"[SorcererDB] Disconnected from {name} / {conn_config.host}")
         elif conn_config.engine == 'sqlite':
             pass
     
@@ -146,6 +158,7 @@ class SorcererDB:
             self.query(self.stored_queries[key])
             return self
         else:
+            logger.error(f"[SorcererDB] Stored query {key} does not exist")
             raise ValueError(f"Stored query {key} does not exist")
 
     def query(self, sql):
@@ -163,6 +176,7 @@ class SorcererDB:
     # Bindings Methods
     def binding(self, param, value):
         if type(param) == dict or type(param) == list or type(param) == tuple:
+            logger.error(f"[SorcererDB] Bindings must be a single parameter. Use set_bindings.")
             raise ValueError("Bindings must be a single parameter. Use set_bindings.")
 
         param = str(param).strip()
@@ -283,22 +297,8 @@ class SorcererDB:
         elif self.config.engine == "postgresql":
             return "$" + key
         else:
+            logger.error(f"[SorcererDB] Invalid engine: {self.config.engine}")
             raise ValueError(f"Invalid engine: {self.config.engine}")
-
-    # Query Execution Methods
-    # def set_cursor(self):
-    #     if self.query.strip().lower().startswith("select"):
-    #         self.cursor = self.connections[self.active_connection].cursor(dictionary=True, buffered=True)
-    #     else:
-    #         self.cursor = self.connections[self.active_connection].cursor(buffered=True)
-    #     return self
-    
-    # def close_cursor(self):
-    #     if self.cursor:
-    #         # self.cursor.fetchall()
-    #         self.cursor.close()
-    #         self.cursor = None
-    #     return self
 
     # Execute a Stored Procedure
     def proc(self, name, params = ()):
@@ -307,9 +307,8 @@ class SorcererDB:
             spell = Spell(self.connections[self.active_connection])
             result = spell.proc(name, params)
         except mysql.connector.Error as err:
-            print("Something went wrong: {}".format(err))
-            self.sql_error = err
-            return False
+            logger.error(f"[SorcererDB] Error executing procedure: {name} | {err}")
+            raise ValueError(f"Error executing procedure: {name} | {err}")
 
         return result
 
@@ -321,27 +320,13 @@ class SorcererDB:
             spell.execute(self.sql_query)
             return spell.fetch(fetch_type, size)
         except mysql.connector.Error as err:
-            print("Something went wrong: {}".format(err))
-            self.sql_error = err
-            return False
+            logger.error(f"[SorcererDB] Error executing query: {self.sql_query} | {err}")
+            raise ValueError(f"Error executing query: {self.sql_query} | {err}")
 
     def execute(self):
-
-
         spell = Spell(self.connections[self.active_connection])
         spell.execute(self.sql_query, self.bindings or {})
         return spell
-
-        # self.close_cursor().set_cursor();
-
-        # try:
-        #     self.cursor.execute(self.query, self.bindings or {})
-        # except mysql.connector.Error as err:
-        #     print("Something went wrong: {}".format(err))
-        #     self.sql_error = err
-        #     return False
-
-        # return True
 
     def result_set(self, fetch_type = "all", size = None):
 
@@ -388,6 +373,7 @@ class SorcererDB:
             self.query(insert_sql).set_bindings(values)
             return self.result_set("last_insert_id")
         else:
+            logger.error(f"[SorcererDB] Invalid data: {data}")
             raise ValueError(f"Invalid data: {data}")
 
     def update(self, table, data, conditions):
@@ -426,18 +412,22 @@ class SorcererDB:
             self.query(delete_sql).set_bindings(c_values)
             return self.result_set("count")
         else:
+            logger.error(f"[SorcererDB] Invalid conditions: {conditions}")
             raise ValueError(f"Invalid conditions: {conditions}")
 
 
     # Transactional Methods
     def begin(self):
+        logger.debug(f"[SorcererDB] Beginning transaction")
         self.connections[self.active_connection].start_transaction()
         return self
     
     def commit(self):
+        logger.debug(f"[SorcererDB] Committing transaction")
         self.connections[self.active_connection].commit()
         return self
     
     def rollback(self):
+        logger.debug(f"[SorcererDB] Rolling back transaction")
         self.connections[self.active_connection].rollback()
         return self

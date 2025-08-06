@@ -5,12 +5,18 @@ name = "pypi"
 
 [packages]
 "mysql.connector" = "*"
-dataclasses = "*"
-pytest = "*"
-pytest-cov = "*"
+"dataclasses" = "*"
+"loguru" = "*"
+pytest-loguru = "*"
 
 [dev-packages]
+pytest = "*"
+pytest-cov = "*"
+coverage = "*"
+tox = "*"
+codecov = "*"
+pytest-loguru = "*"
 
 [requires]
-python_version = "3.10"
-python_full_version = "3.10.4"
+python_version = "3.13"
+python_full_version = "3.13.5"
