@@ -43,9 +43,10 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          coverage run -m pytest
-          coverage report
-          coverage xml
+          pytest --cov=sorcererdb --cov-report=xml
+          # coverage run -m pytest
+          # coverage report
+          # coverage xml
 
       - name: (Debug) Show coverage summary
         run: coverage report
