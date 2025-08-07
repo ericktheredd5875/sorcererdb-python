@@ -1,6 +1,6 @@
 [project]
 name = "sorcererdb"
-version = "0.1.0a1"
+version = "0.1.0a2"
 description = "A magical Python database abstraction layer inspired by Sorcery"
 readme = "README.md"
 license = "MIT"
@@ -17,3 +17,6 @@ dev = ["pytest", "pytest-cov", "black", "mypy"]
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["sorcererdb"]
