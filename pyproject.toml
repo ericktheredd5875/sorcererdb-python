@@ -1,14 +1,14 @@
 [project]
 name = "sorcererdb"
-version = "0.1.0"
-description = "A lightweight, caching, multi-connection SQL abstraction for Python"
+version = "0.1.0a1"
+description = "A magical Python database abstraction layer inspired by Sorcery"
 readme = "README.md"
 license = "MIT"
-authors = [{name = "Eric Harris"}]
-requires-python = ">=3.8"
+authors = [{name = "Eric Harris", email = "ericktheredd5875@gmail.com"}]
+requires-python = ">=3.10"
 dependencies = [
-    "mysql-connector-python",
-    "loguru"
+    "mysql-connector-python>=8.0",
+    "loguru>=0.7.0"
 ]
 
 [project.optional-dependencies]

@@ -18,6 +18,5 @@ from loguru import logger
 from .logging import configure_logging
 
 
-configure_logging(level="DEBUG", log_file="C:/codebases/sorcererdb-python/sorcererdb.log")
-logger.info("SorcererDB initialized")
+configure_logging()
 
