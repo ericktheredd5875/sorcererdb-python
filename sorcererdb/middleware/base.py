@@ -3,8 +3,8 @@
 # ──────────────────────────────────────────────────────────────────────────────
 # This file contains the base classes for all middleware functionality.
 # ──────────────────────────────────────────────────────────────────────────────
-import time
 from __future__ import annotations
+import time
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Iterable, List, MutableMapping, Optional, Protocol, Sequence, Tuple
 
@@ -25,7 +25,7 @@ class ExecutionContext:
 
     operation : str
     sql       : str
-    params    : Any
+    params    : tuple | list | dict | None
     attempt   : int = 1
     start_time: float = field(default_factory=time.time)
     end_time  : Optional[float] = None
@@ -36,7 +36,7 @@ class Middleware(Protocol):
     """Middleware protocol."""
 
     def before_execute(self, ctx: ExecutionContext) -> None: ...
-    def after_execute(self, ctx: ExecutionContext) -> None: ...
+    def after_execute(self, ctx: ExecutionContext, result: Any) -> None: ...
     def on_error(self, ctx: ExecutionContext, exc: BaseException) -> None: ...
 
 class MiddlewareAdapter:
@@ -47,7 +47,7 @@ class MiddlewareAdapter:
         return None
 
     # type: ignore[override]
-    def after_execute(self, ctx: ExecutionContext) -> None:
+    def after_execute(self, ctx: ExecutionContext, result: Any) -> None:
         return None
 
     # type: ignore[override]

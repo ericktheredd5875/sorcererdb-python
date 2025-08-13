@@ -1,10 +1,11 @@
 # ──────────────────────────────────────────────────────────────────────────────
 # File: sorcererdb/middleware/examples.py
 # ──────────────────────────────────────────────────────────────────────────────
+from __future__ import annotations
+
 import math
 import time
 
-from __future__ import annotations
 from typing import Any, Optional
 
 from .base import ExecutionContext, MiddlewareAdapter

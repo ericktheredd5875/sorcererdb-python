@@ -4,6 +4,7 @@
 # This file contains the base client class for all database operations.
 # ──────────────────────────────────────────────────────────────────────────────
 from __future__ import annotations
+import time
 from typing import Any, Iterable, Mapping, Optional, Sequence, Tuple
 
 from .dialects.base import Dialect
@@ -52,4 +53,4 @@ class SorcererClient:
             ctx.end_time = time.time()
             self.middleware.run_error(ctx, exc)
             raise
-        
+
