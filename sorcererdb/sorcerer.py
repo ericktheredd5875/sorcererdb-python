@@ -243,13 +243,13 @@ class Sorcerer:
         *,
         dialect: Optional[DialectLike] = None,
         middlewares: Optional[Sequence[Any]] = None,
-        logger: Optional[logger.Logger] = None,
+        # logger: Optional[logger.Logger] = None,
     ) -> None:
         self._dialect: DialectLike = dialect or _DefaultDialect()
         self._mw = _MWStack(middlewares)
         self._conns: Dict[str, _ConnConfig] = {}
         self._active: Optional[str] = None
-        self.log = logger or logger.getLogger("sorcererdb")
+        self.log = logger.bind(component="sorcererdb.sorcerer")
 
     # --- connection management ------------------------------------------------
     def add_connection(
@@ -304,7 +304,7 @@ class Sorcerer:
             connection_name=nm,
             dialect=self._dialect,
             mw=self._mw,
-            logger=self.log,
+            # logger=self.log,
         )
 
     def closs_all(self) -> None:
@@ -323,13 +323,13 @@ class Client:
         connection_name: str,
         dialect: DialectLike,
         mw: _MWStack,
-        logger: Optional[logger.Logger] = None,
+        # logger: Optional[logger.Logger] = None,
     ) -> None:
         self.connection = connection
         self.connection_name = connection_name
         self.dialect = dialect
         self.mw = mw
-        self.log = logger or logger.getLogger("sorcererdb")
+        self.log = logger.bind(component="sorcererdb.client", conn=connection_name)
 
     # --- core execute/query ---------------------------------------------------
     def execute(self, sql: str, params: Any | None = None) -> Any:
@@ -368,7 +368,7 @@ class Client:
 
     # --- transactions ---------------------------------------------------------
     @contextlib.contextmanager
-    def transation(self):
+    def transaction(self):
         ctx = _ExecCtx(
             sql="<transaction>", params=None, connection_name=self.connection_name
         )

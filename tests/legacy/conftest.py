@@ -1,31 +1,36 @@
 # tests/conftest.py
 import pytest
 
+pytestmark = pytest.mark.legacy
+
 # Attempt to import sorcererdb modules — warn if it fails
 try:
-    from sorcererdb import SorcererDB, DBConfig, Spell
+    from sorcererdb import DBConfig, SorcererDB, Spell
 except ModuleNotFoundError as e:
     import sys
+
     print(f"[conftest.py warning] Could not import modules: {e}", file=sys.stderr)
     SorcererDB = DBConfig = Spell = None
+
 
 @pytest.fixture(scope="session")
 def test_config():
     """Test database configuration"""
     if DBConfig is None:
         pytest.skip("DBConfig not available — sorcererdb not installed.")
-        
+
     return DBConfig(
-        engine='mysql',
-        name='TestDB',
-        host='localhost',
+        engine="mysql",
+        name="TestDB",
+        host="localhost",
         port=3306,
-        user='sorcerer',
-        password='sorcererpw',
-        database='sorcererdb_test1',  # Separate test database
-        charset='utf8mb4',
-        autocommit=True
+        user="sorcerer",
+        password="sorcererpw",
+        database="sorcererdb_test1",  # Separate test database
+        charset="utf8mb4",
+        autocommit=True,
     )
+
 
 @pytest.fixture(scope="function")
 def db(test_config):
@@ -35,16 +40,17 @@ def db(test_config):
     """Database fixture with cleanup"""
     db = SorcererDB(test_config)
     db.connect(test_config.name)
-    
+
     # Setup test tables
     setup_test_tables(db)
     # cleanup_test_tables(db)
-    
+
     yield db
-    
+
     # Cleanup
     cleanup_test_tables(db)
     db.disconnect(test_config.name)
+
 
 def setup_test_tables(db):
     """Create test tables"""
@@ -70,21 +76,23 @@ def setup_test_tables(db):
             PRIMARY KEY (`id`) USING BTREE,
             INDEX `user_id` (`user_id`) USING BTREE
         )
-        """
+        """,
     ]
-    
+
     for table_sql in tables:
         db.simple(table_sql, "count")
 
+
 def cleanup_test_tables(db):
     """Clean test tables"""
-    tables = ['posts', 'users']  # Order matters due to foreign keys
+    tables = ["posts", "users"]  # Order matters due to foreign keys
     for table in tables:
         db.simple(f"TRUNCATE TABLE {table};", "count")
 
+
 def create_test_db():
     """Create test database"""
-    config = DBConfig(engine='mysql', user="root", password="root")
+    config = DBConfig(engine="mysql", user="root", password="root")
     db = SorcererDB(config)
     db.connect(config.name)
 
