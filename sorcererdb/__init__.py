@@ -1,5 +1,3 @@
-
-
 # try:
 #     from .core import SorcererDB
 #     from .config import DBConfig
@@ -10,13 +8,19 @@
 
 # from loguru import logger
 
-from .core import SorcererDB
+from loguru import logger
+
 from .config import DBConfig
+from .errors import *
+from .logging import configure_logging
+from .sorcerer import Sorcerer
 from .spell import Spell
 
-from loguru import logger
-from .logging import configure_logging
-
+__all__ = [
+    "Sorcerer",
+    "DBConfig",
+    "Spell",
+    "configure_logging",
+]
 
 configure_logging()
-

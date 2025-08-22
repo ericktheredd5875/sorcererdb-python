@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "todo2": {
+      "command": "node",
+      "args": [
+        "c:\\Users\\erich\\.cursor\\extensions\\todo2.todo2-0.0.8-universal\\dist\\mcp-server.js"
+      ],
+      "env": {
+        "TODO2_WORKSPACE_PATH": "c:\\codebases\\sorcererdb-python"
+      }
+    }
+  }
+}
