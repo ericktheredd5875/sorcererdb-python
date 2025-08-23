@@ -307,7 +307,7 @@ class Sorcerer:
             # logger=self.log,
         )
 
-    def closs_all(self) -> None:
+    def close_all(self) -> None:
         for cfg in self._conns.values():
             cfg.close(self._mw)
 
@@ -342,7 +342,8 @@ class Client:
             self.mw.after_execute(ctx, cur)
             return cur
         except Exception as exc:
-            raise QueryError(f"Query failed: {exc}") from exc
+            raise QueryError(f"Query failed") from exc
+            # raise QueryError(f"Query failed {exc}") from exc
 
     def query_one(
         self, sql: str, params: Any | None = None

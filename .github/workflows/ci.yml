@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, dev]
+    branches: [main, dev, feat/core-cleanups-contracts-m1]
   pull_request:
 
 jobs:
@@ -40,6 +40,11 @@ jobs:
 
       - name: Wait for MySQL
         run: sleep 15
+      
+      - name: Lint (ruff)
+        run: ruff check .
+      - name: Type check (pyright)
+        run: pyright
 
       - name: Run tests with coverage
         run: |
